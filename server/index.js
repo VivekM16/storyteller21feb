@@ -17,7 +17,7 @@ app.use(cors({
 app.use(express.json());
 
 const openai = new OpenAI({
-  apiKey: process.env.VITE_OPENAI_KEY
+  apiKey: process.env.VITE_OPENAPI_KEY
 });
 
 // Store usage statistics
@@ -39,6 +39,10 @@ function calculateCost(promptTokens, completionTokens) {
   const completionCost = (completionTokens / 1000) * COST_PER_1K_TOKENS.completion;
   return promptCost + completionCost;
 }
+
+app.get('/', async (req, res) => {
+  return res.json({message: "Welcome to storyteller"})
+})
 
 // Text-to-Speech endpoint
 app.post('/api/text-to-speech', async (req, res) => {
@@ -76,6 +80,7 @@ app.post('/api/text-to-speech', async (req, res) => {
 
 app.post('/api/generate-story', async (req, res) => {
   try {
+    console.log("Yupp here")
     const { age, theme, writingStyle, characters, season, storyLength, customPreferences } = req.body;
     
     if (!age || !theme || !writingStyle || !characters || !season || !storyLength) {

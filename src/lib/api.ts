@@ -49,7 +49,8 @@ export interface Story {
 }
 
 // API URL is now relative in both development and production
-const API_URL = '/api';
+// const API_URL = '/api';
+const API_URL = import.meta.env.VITE_BACKEND_URL+'/api';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -129,6 +130,7 @@ export async function getStoryById(id: string): Promise<Story | null> {
 
 export async function generateStory(params: StoryParams): Promise<StoryResponse> {
   try {
+    console.log("Here ", API_URL)
     // First save the prompt to the database
     const promptId = await savePrompt(params);
 
