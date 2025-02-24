@@ -11,6 +11,7 @@ export default function AudioPlayer({ text }: AudioPlayerProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const soundRef = useRef<Howl | null>(null);
+  const API_URL = import.meta.env.VITE_BACKEND_URL+'/api';
 
   const playAudio = async () => {
     try {
@@ -26,7 +27,7 @@ export default function AudioPlayer({ text }: AudioPlayerProps) {
       }
 
       setIsLoading(true);
-      const response = await fetch('/api/text-to-speech', {
+      const response = await fetch(API_URL + '/text-to-speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
