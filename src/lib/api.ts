@@ -48,89 +48,116 @@ export interface Story {
   prompt?: StoryPrompt;
 }
 
-// API URL is now relative in both development and production
+// Use relative API URL for local development
 // const API_URL = '/api';
 const API_URL = import.meta.env.VITE_BACKEND_URL+'/api';
 
-// Initialize Supabase client
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Initialize Supabase client with error handling
+const initSupabase = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase configuration is missing. Please check your environment variables.');
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+};
+
+const supabase = initSupabase();
 
 // Save prompt to database
 async function savePrompt(params: StoryParams): Promise<string> {
-  const { data, error } = await supabase
-    .from('story_prompts')
-    .insert({
-      age_group: params.age,
-      theme: params.theme,
-      writing_style: params.writingStyle,
-      characters: params.characters,
-      season: params.season,
-      story_length: params.storyLength,
-      custom_preferences: params.customPreferences,
-      status: 'pending'
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('story_prompts')
+      .insert({
+        age_group: params.age,
+        theme: params.theme,
+        writing_style: params.writingStyle,
+        characters: params.characters,
+        season: params.season,
+        story_length: params.storyLength,
+        custom_preferences: params.customPreferences,
+        status: 'pending'
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data.id;
+    if (error) throw error;
+    return data.id;
+  } catch (error) {
+    console.error('Error saving prompt:', error);
+    throw error;
+  }
 }
 
 // Save generated story to database
 async function saveStory(promptId: string, title: string, content: string): Promise<void> {
-  const preview = content.split('\n')[0].slice(0, 200) + '...';
-  
-  const { error } = await supabase
-    .from('stories')
-    .insert({
-      prompt_id: promptId,
-      title,
-      content,
-      preview
-    });
+  try {
+    const preview = content.split('\n')[0].slice(0, 200) + '...';
+    
+    const { error } = await supabase
+      .from('stories')
+      .insert({
+        prompt_id: promptId,
+        title,
+        content,
+        preview
+      });
 
-  if (error) throw error;
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error saving story:', error);
+    throw error;
+  }
 }
 
 // Fetch all stories with their prompts
 export async function getStories(): Promise<Story[]> {
-  const { data, error } = await supabase
-    .from('stories')
-    .select(`
-      *,
-      prompt:prompt_id(*)
-    `)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('stories')
+      .select(`
+        *,
+        prompt:prompt_id(*)
+      `)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching stories:', error);
+    throw error;
+  }
 }
 
 // Get a specific story by ID
 export async function getStoryById(id: string): Promise<Story | null> {
-  const { data, error } = await supabase
-    .from('stories')
-    .select(`
-      *,
-      prompt:prompt_id(*)
-    `)
-    .eq('id', id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('stories')
+      .select(`
+        *,
+        prompt:prompt_id(*)
+      `)
+      .eq('id', id)
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error('Error fetching story:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
     console.error('Error fetching story:', error);
     return null;
   }
-
-  return data;
 }
 
 export async function generateStory(params: StoryParams): Promise<StoryResponse> {
   try {
-    console.log("Here ", API_URL)
     // First save the prompt to the database
     const promptId = await savePrompt(params);
 
